@@ -48,7 +48,7 @@ async function loadBantamsTeams(): Promise<BantamsTeam[]> {
     const teams: BantamsTeam[] = [];
     for (const league of data.leagues) {
       for (const team of league.teams) {
-        if (team.slug.startsWith('east-leake-bantams') || team.slug.startsWith('east-leake-white')) {
+        if (team.slug.startsWith('east-leake-')) {
           teams.push({ name: team.name, slug: team.slug, league: league.slug });
         }
       }
