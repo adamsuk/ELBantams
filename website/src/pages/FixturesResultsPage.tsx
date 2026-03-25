@@ -117,14 +117,6 @@ export function FixturesResultsPage({ feed }: Props) {
     <Stack gap="md">
       <Title order={2}>Fixtures & Results</Title>
 
-      <Text size="sm" c="dimmed">
-        Data sourced from FA Full-Time via{' '}
-        <Text component="a" href="https://github.com/adamsuk/fulltimeCalendar" c="orange.6" size="sm">
-          fulltimeCalendar
-        </Text>
-        . Last updated: {new Date(feed.generated).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.
-      </Text>
-
       <Select
         label="Filter by team"
         placeholder="All Bantams teams"

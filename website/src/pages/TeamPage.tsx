@@ -124,6 +124,16 @@ export function TeamPage({ bantamsTeams }: Props) {
         Paste the copied link into Google Calendar, Apple Calendar, or Outlook to subscribe.
       </Text>
 
+      {feed && feed !== undefined && (
+        <Text size="xs" c="dimmed">
+          Data sourced from FA Full-Time via{' '}
+          <Text component="a" href="https://github.com/adamsuk/fulltimeCalendar" c="orange.6" size="xs">
+            fulltimeCalendar
+          </Text>
+          . Last updated: {new Date(feed.generated).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}.
+        </Text>
+      )}
+
       {feed === undefined ? (
         <Center py="xl"><Loader color="orange" /></Center>
       ) : feed === null ? (
