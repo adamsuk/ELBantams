@@ -37,6 +37,7 @@ export interface Team {
   contact: string;
   managerLabel?: string;
   coachLabel?: string;
+  slug?: string; // direct feed slug for linking to fixtures/results
 }
 
 export interface TeamSection {
