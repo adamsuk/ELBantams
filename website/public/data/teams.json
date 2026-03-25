@@ -36,6 +36,23 @@
       ]
     },
     {
+      "id": "bantams-ladies",
+      "name": "Bantams",
+      "subtitle": "Ladies",
+      "icon": "fa-heart",
+      "teams": [
+        {
+          "name": "Ladies",
+          "description": "Our ladies team competes in the local women's league. New players of all abilities are always welcome — come along to a session.",
+          "photo": "",
+          "manager": "TBC",
+          "coach": "TBC",
+          "contact": "TBC",
+          "slug": "east-leake-fc-ladies"
+        }
+      ]
+    },
+    {
       "id": "bantams-youth",
       "name": "Bantams",
       "subtitle": "Youth Teams",
@@ -108,30 +125,6 @@
         {
           "name": "Under 14s",
           "description": "High-quality youth football for our older juniors, developing players with an eye towards the senior game.",
-          "photo": "",
-          "manager": "TBC",
-          "coach": "TBC",
-          "contact": "TBC"
-        }
-      ]
-    },
-    {
-      "id": "bantams-girls-ladies",
-      "name": "Bantams",
-      "subtitle": "Girls & Ladies",
-      "icon": "fa-heart",
-      "teams": [
-        {
-          "name": "Girls",
-          "description": "Growing girls' football in East Leake. Whether your daughter is a complete beginner or already playing — come and join the Bantams family.",
-          "photo": "",
-          "manager": "TBC",
-          "coach": "TBC",
-          "contact": "TBC"
-        },
-        {
-          "name": "Ladies",
-          "description": "Our ladies team competes in the local women's league. New players of all abilities are always welcome — come along to a session.",
           "photo": "",
           "manager": "TBC",
           "coach": "TBC",
