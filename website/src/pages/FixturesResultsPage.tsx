@@ -72,17 +72,33 @@ export function FixturesResultsPage({ feed }: Props) {
 
   const fixtures = useMemo(() => {
     if (!feed) return [];
-    const list = selectedTeam
-      ? feed.fixtures.filter((f) => f.team === selectedTeam)
-      : feed.fixtures;
+    let list: typeof feed.fixtures;
+    if (selectedTeam) {
+      list = feed.fixtures.filter((f) => f.team === selectedTeam);
+    } else {
+      const seen = new Set<string>();
+      list = feed.fixtures.filter((f) => {
+        if (seen.has(f.id)) return false;
+        seen.add(f.id);
+        return true;
+      });
+    }
     return [...list].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
   }, [feed, selectedTeam]);
 
   const results = useMemo(() => {
     if (!feed) return [];
-    const list = selectedTeam
-      ? feed.results.filter((r) => r.team === selectedTeam)
-      : feed.results;
+    let list: typeof feed.results;
+    if (selectedTeam) {
+      list = feed.results.filter((r) => r.team === selectedTeam);
+    } else {
+      const seen = new Set<string>();
+      list = feed.results.filter((r) => {
+        if (seen.has(r.id)) return false;
+        seen.add(r.id);
+        return true;
+      });
+    }
     return [...list].sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
   }, [feed, selectedTeam]);
 
@@ -142,9 +158,11 @@ export function FixturesResultsPage({ feed }: Props) {
                     <Text size="xs" c="dimmed">{formatDate(f.date)} · {f.time}</Text>
                   </Group>
                   <Text fw={700} size="sm" ta="center">
-                    {f.home_team} vs {f.away_team}
+                    {selectedTeam ? `${f.team} vs ${f.opponent}` : `${f.home_team} vs ${f.away_team}`}
                   </Text>
-                  <Text size="xs" c="dimmed" ta="center">{f.venue}</Text>
+                  <Text size="xs" c="dimmed" ta="center">
+                    {selectedTeam ? `${f.home_away === 'home' ? 'Home' : 'Away'} · ${f.venue}` : f.venue}
+                  </Text>
                 </Paper>
               ))}
             </Stack>
