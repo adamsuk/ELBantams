@@ -8,6 +8,59 @@ import { IconCalendar, IconTrophy, IconAlertCircle, IconCopy, IconCheck, IconArr
 import type { BantamsTeam, BantamsTeamFeed } from '../types';
 import { loadTeamFeed, teamCalendarUrl } from '../data';
 
+const FORM_GAMES = 5;
+
+type Outcome = 'W' | 'D' | 'L';
+const outcomeColor: Record<Outcome, string> = { W: 'green', D: 'yellow', L: 'red' };
+
+function getTeamOutcome(
+  r: BantamsTeamFeed['results'][number],
+  teamName: string,
+): Outcome | null {
+  if (r.home_score === null || r.away_score === null) return null;
+  const isHome = r.home_team === teamName;
+  const gf = isHome ? r.home_score : r.away_score;
+  const ga = isHome ? r.away_score : r.home_score;
+  if (gf > ga) return 'W';
+  if (gf === ga) return 'D';
+  return 'L';
+}
+
+function TeamResultsStats({ results, teamName }: { results: BantamsTeamFeed['results']; teamName: string }) {
+  const outcomes = results
+    .map((r) => getTeamOutcome(r, teamName))
+    .filter((o): o is Outcome => o !== null);
+  if (outcomes.length === 0) return null;
+
+  const w = outcomes.filter((o) => o === 'W').length;
+  const d = outcomes.filter((o) => o === 'D').length;
+  const l = outcomes.filter((o) => o === 'L').length;
+  const form = outcomes.slice(0, FORM_GAMES);
+
+  return (
+    <Paper p="sm" withBorder radius="md">
+      <Group gap="lg" wrap="wrap">
+        <Group gap="xs">
+          <Text size="xs" c="dimmed" fw={500}>P</Text>
+          <Text size="sm" fw={700}>{outcomes.length}</Text>
+          <Text size="xs" c="green" fw={500} ml={4}>W</Text>
+          <Text size="sm" fw={700} c="green">{w}</Text>
+          <Text size="xs" c="yellow.7" fw={500} ml={4}>D</Text>
+          <Text size="sm" fw={700} c="yellow.7">{d}</Text>
+          <Text size="xs" c="red" fw={500} ml={4}>L</Text>
+          <Text size="sm" fw={700} c="red">{l}</Text>
+        </Group>
+        <Group gap={4} align="center">
+          <Text size="xs" c="dimmed">Form</Text>
+          {form.map((o, i) => (
+            <Badge key={i} color={outcomeColor[o]} variant="filled" size="xs" radius="sm">{o}</Badge>
+          ))}
+        </Group>
+      </Group>
+    </Paper>
+  );
+}
+
 interface Props {
   bantamsTeams: BantamsTeam[];
 }
@@ -115,6 +168,11 @@ export function TeamPage({ bantamsTeams }: Props) {
             {feed.results.length === 0 ? (
               <Text c="dimmed" size="sm">No results yet.</Text>
             ) : (
+              <Stack gap="sm">
+              <TeamResultsStats
+                results={[...feed.results].sort((a, b) => b.date.localeCompare(a.date))}
+                teamName={feed.team}
+              />
               <Table striped highlightOnHover withTableBorder>
                 <Table.Thead>
                   <Table.Tr>
@@ -145,6 +203,7 @@ export function TeamPage({ bantamsTeams }: Props) {
                     ))}
                 </Table.Tbody>
               </Table>
+              </Stack>
             )}
           </Tabs.Panel>
         </Tabs>

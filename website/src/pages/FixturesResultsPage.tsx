@@ -4,7 +4,51 @@ import {
   Table, Alert,
 } from '@mantine/core';
 import { IconCalendar, IconTrophy, IconAlertCircle } from '@tabler/icons-react';
-import type { BantamsFeed } from '../types';
+import type { BantamsFeed, BantamsResult } from '../types';
+
+const FORM_GAMES = 5;
+
+function getOutcome(r: BantamsResult): 'W' | 'D' | 'L' | null {
+  if (r.goals_for === null || r.goals_against === null) return null;
+  if (r.goals_for > r.goals_against) return 'W';
+  if (r.goals_for === r.goals_against) return 'D';
+  return 'L';
+}
+
+const outcomeColor: Record<'W' | 'D' | 'L', string> = { W: 'green', D: 'yellow', L: 'red' };
+
+function ResultsStats({ results }: { results: BantamsResult[] }) {
+  const outcomes = results.map(getOutcome).filter((o): o is 'W' | 'D' | 'L' => o !== null);
+  if (outcomes.length === 0) return null;
+
+  const w = outcomes.filter((o) => o === 'W').length;
+  const d = outcomes.filter((o) => o === 'D').length;
+  const l = outcomes.filter((o) => o === 'L').length;
+  const form = outcomes.slice(0, FORM_GAMES);
+
+  return (
+    <Paper p="sm" withBorder radius="md">
+      <Group gap="lg" wrap="wrap">
+        <Group gap="xs">
+          <Text size="xs" c="dimmed" fw={500}>P</Text>
+          <Text size="sm" fw={700}>{outcomes.length}</Text>
+          <Text size="xs" c="green" fw={500} ml={4}>W</Text>
+          <Text size="sm" fw={700} c="green">{w}</Text>
+          <Text size="xs" c="yellow.7" fw={500} ml={4}>D</Text>
+          <Text size="sm" fw={700} c="yellow.7">{d}</Text>
+          <Text size="xs" c="red" fw={500} ml={4}>L</Text>
+          <Text size="sm" fw={700} c="red">{l}</Text>
+        </Group>
+        <Group gap={4} align="center">
+          <Text size="xs" c="dimmed">Form</Text>
+          {form.map((o, i) => (
+            <Badge key={i} color={outcomeColor[o]} variant="filled" size="xs" radius="sm">{o}</Badge>
+          ))}
+        </Group>
+      </Group>
+    </Paper>
+  );
+}
 
 interface Props {
   feed: BantamsFeed | null;
@@ -110,6 +154,8 @@ export function FixturesResultsPage({ feed }: Props) {
           {results.length === 0 ? (
             <Text c="dimmed" size="sm">No results yet.</Text>
           ) : (
+            <Stack gap="sm">
+            {selectedTeam && <ResultsStats results={results} />}
             <Table striped highlightOnHover withTableBorder>
               <Table.Thead>
                 <Table.Tr>
@@ -148,6 +194,7 @@ export function FixturesResultsPage({ feed }: Props) {
                 ))}
               </Table.Tbody>
             </Table>
+            </Stack>
           )}
         </Tabs.Panel>
       </Tabs>
