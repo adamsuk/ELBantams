@@ -1,17 +1,23 @@
-import { Burger, Group, Text, ActionIcon, useMantineTheme } from '@mantine/core';
+import { Burger, Group, Text, ActionIcon, Badge } from '@mantine/core';
 import { IconBrandFacebook, IconBrandInstagram, IconBrandTwitter } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
-import type { Club } from '../types';
+import type { Club, TeamSection } from '../types';
+import { useSection } from '../context/SectionContext';
+import { tablerIcon } from '../utils/icons';
 
 interface Props {
   club: Club;
+  sections: TeamSection[];
   navOpen: boolean;
   onNavToggle: () => void;
 }
 
-export function SiteHeader({ club, navOpen, onNavToggle }: Props) {
-  const theme = useMantineTheme();
+export function SiteHeader({ club, sections, navOpen, onNavToggle }: Props) {
   const clubShort = club.name.replace(' FC', '');
+  const { activeSection, setActiveSection } = useSection();
+  const activeData = activeSection !== 'all'
+    ? sections.find(s => s.id === activeSection)
+    : null;
 
   return (
     <Group h="100%" px="md" justify="space-between">
@@ -30,6 +36,20 @@ export function SiteHeader({ club, navOpen, onNavToggle }: Props) {
       </Group>
 
       <Group gap="xs">
+        {activeData && (
+          <Badge
+            color="orange"
+            variant="filled"
+            size="md"
+            leftSection={tablerIcon(activeData.icon)}
+            style={{ cursor: 'pointer' }}
+            onClick={() => setActiveSection('all')}
+            title="Click to show all sections"
+          >
+            {activeData.name} {activeData.subtitle}
+          </Badge>
+        )}
+
         {club.socials.facebook && club.socials.facebook !== '#' && (
           <ActionIcon
             component="a"
