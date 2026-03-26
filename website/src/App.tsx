@@ -48,7 +48,8 @@ export default function App() {
         <AppShell.Navbar>
           <SiteSidebar
             club={data.club}
-            fixture={data.fixtures.next}
+            robinsFeed={data.robinsFeed}
+            ladiesFeed={data.ladiesFeed}
             bantamsFeed={data.bantamsFeed}
             onNavClick={close}
           />

@@ -74,5 +74,12 @@ export async function loadAllData(): Promise<AppData> {
       loadBantamsTeams(),
     ]);
 
-  return { club, teams, committee, registration, news, fixtures, gallery, matchday, bantamsFeed, bantamsTeams } as AppData;
+  const robinsTeam = (bantamsTeams as BantamsTeam[]).find(t => t.slug === 'east-leake-robins-fc');
+  const ladiesTeam = (bantamsTeams as BantamsTeam[]).find(t => t.slug === 'east-leake-fc-ladies');
+  const [robinsFeed, ladiesFeed] = await Promise.all([
+    robinsTeam ? loadTeamFeed(robinsTeam.league, robinsTeam.slug) : Promise.resolve(null),
+    ladiesTeam ? loadTeamFeed(ladiesTeam.league, ladiesTeam.slug) : Promise.resolve(null),
+  ]);
+
+  return { club, teams, committee, registration, news, fixtures, gallery, matchday, bantamsFeed, bantamsTeams, robinsFeed, ladiesFeed } as AppData;
 }

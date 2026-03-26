@@ -154,4 +154,6 @@ export interface AppData {
   matchday: MatchdayItem[];
   bantamsFeed: BantamsFeed | null;
   bantamsTeams: BantamsTeam[];
+  robinsFeed: BantamsTeamFeed | null;
+  ladiesFeed: BantamsTeamFeed | null;
 }
