@@ -4,7 +4,8 @@ import {
   Table, Alert,
 } from '@mantine/core';
 import { IconCalendar, IconTrophy, IconAlertCircle } from '@tabler/icons-react';
-import type { ClubFeed, LiveResult } from '../types';
+import type { ClubFeed, LiveResult, TeamsData, LiveTeam } from '../types';
+import { useSection } from '../context/SectionContext';
 
 const FORM_GAMES = 5;
 
@@ -52,6 +53,28 @@ function ResultsStats({ results }: { results: LiveResult[] }) {
 
 interface Props {
   feed: ClubFeed | null;
+  teams: TeamsData;
+  liveTeams: LiveTeam[];
+}
+
+/** Build a set of live team names that belong to a given section. */
+function sectionTeamNames(sectionId: string, teams: TeamsData, liveTeams: LiveTeam[]): Set<string> {
+  const section = teams.sections.find(s => s.id === sectionId);
+  if (!section) return new Set();
+  const names = new Set<string>();
+  for (const team of section.teams) {
+    if (team.slug) {
+      const live = liveTeams.find(lt => lt.slug === team.slug);
+      if (live) names.add(live.name);
+    } else {
+      const m = team.name.match(/Under\s+(\d+)/i);
+      if (m) {
+        const tag = `-u${m[1]}`.toLowerCase();
+        liveTeams.filter(lt => lt.slug.includes(tag)).forEach(lt => names.add(lt.name));
+      }
+    }
+  }
+  return names;
 }
 
 function formatDate(iso: string): string {
@@ -59,48 +82,63 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-export function FixturesResultsPage({ feed }: Props) {
+export function FixturesResultsPage({ feed, teams, liveTeams }: Props) {
+  const { activeSection } = useSection();
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
+
+  const allowedTeams = useMemo(() => {
+    if (activeSection === 'all') return null;
+    return sectionTeamNames(activeSection, teams, liveTeams);
+  }, [activeSection, teams, liveTeams]);
 
   const teamNames = useMemo(() => {
     if (!feed) return [];
     const names = new Set<string>();
     feed.fixtures.forEach((f) => f.team && names.add(f.team));
     feed.results.forEach((r) => r.team && names.add(r.team));
-    return Array.from(names).sort();
-  }, [feed]);
+    return Array.from(names)
+      .filter(n => !allowedTeams || allowedTeams.has(n))
+      .sort();
+  }, [feed, allowedTeams]);
+
+  // Reset team dropdown when it's no longer in the available list
+  const effectiveTeam = selectedTeam && teamNames.includes(selectedTeam) ? selectedTeam : null;
 
   const fixtures = useMemo(() => {
     if (!feed) return [];
-    let list: typeof feed.fixtures;
-    if (selectedTeam) {
-      list = feed.fixtures.filter((f) => f.team === selectedTeam);
+    let list = allowedTeams
+      ? feed.fixtures.filter(f => allowedTeams.has(f.team))
+      : feed.fixtures;
+    if (effectiveTeam) {
+      list = list.filter((f) => f.team === effectiveTeam);
     } else {
       const seen = new Set<string>();
-      list = feed.fixtures.filter((f) => {
+      list = list.filter((f) => {
         if (seen.has(f.id)) return false;
         seen.add(f.id);
         return true;
       });
     }
     return [...list].sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-  }, [feed, selectedTeam]);
+  }, [feed, effectiveTeam, allowedTeams]);
 
   const results = useMemo(() => {
     if (!feed) return [];
-    let list: typeof feed.results;
-    if (selectedTeam) {
-      list = feed.results.filter((r) => r.team === selectedTeam);
+    let list = allowedTeams
+      ? feed.results.filter(r => allowedTeams.has(r.team))
+      : feed.results;
+    if (effectiveTeam) {
+      list = list.filter((r) => r.team === effectiveTeam);
     } else {
       const seen = new Set<string>();
-      list = feed.results.filter((r) => {
+      list = list.filter((r) => {
         if (seen.has(r.id)) return false;
         seen.add(r.id);
         return true;
       });
     }
     return [...list].sort((a, b) => b.date.localeCompare(a.date) || b.time.localeCompare(a.time));
-  }, [feed, selectedTeam]);
+  }, [feed, effectiveTeam, allowedTeams]);
 
   if (!feed) {
     return (
@@ -129,7 +167,7 @@ export function FixturesResultsPage({ feed }: Props) {
         label="Filter by team"
         placeholder="All teams"
         data={teamNames}
-        value={selectedTeam}
+        value={effectiveTeam}
         onChange={(value) => setSelectedTeam(value)}
         clearable
         searchable
@@ -158,10 +196,10 @@ export function FixturesResultsPage({ feed }: Props) {
                     <Text size="xs" c="dimmed">{formatDate(f.date)} · {f.time}</Text>
                   </Group>
                   <Text fw={700} size="sm" ta="center">
-                    {selectedTeam ? `${f.team} vs ${f.opponent}` : `${f.home_team} vs ${f.away_team}`}
+                    {effectiveTeam ? `${f.team} vs ${f.opponent}` : `${f.home_team} vs ${f.away_team}`}
                   </Text>
                   <Text size="xs" c="dimmed" ta="center">
-                    {selectedTeam ? `${f.home_away === 'home' ? 'Home' : 'Away'} · ${f.venue}` : f.venue}
+                    {effectiveTeam ? `${f.home_away === 'home' ? 'Home' : 'Away'} · ${f.venue}` : f.venue}
                   </Text>
                 </Paper>
               ))}
@@ -174,7 +212,7 @@ export function FixturesResultsPage({ feed }: Props) {
             <Text c="dimmed" size="sm">No results yet.</Text>
           ) : (
             <Stack gap="sm">
-            {selectedTeam && <ResultsStats results={results} />}
+            {effectiveTeam && <ResultsStats results={results} />}
             <Table striped highlightOnHover withTableBorder>
               <Table.Thead>
                 <Table.Tr>
