@@ -1,6 +1,7 @@
 import { createTheme } from '@mantine/core';
+import type { MantineColorsTuple } from '@mantine/core';
 
-const ORANGE_SHADES: string[] = [
+const ORANGE_SHADES: MantineColorsTuple = [
   '#fff4eb',
   '#ffe8d2',
   '#ffd0a8',
