@@ -6,6 +6,7 @@ import { loadAllData } from './data';
 import type { AppData } from './types';
 import { SiteHeader } from './components/SiteHeader';
 import { SiteSidebar } from './components/SiteSidebar';
+import { SectionProvider } from './context/SectionContext';
 import { HomePage } from './pages/HomePage';
 import { AboutPage } from './pages/AboutPage';
 import { TeamsPage } from './pages/TeamsPage';
@@ -35,6 +36,7 @@ export default function App() {
   }
 
   return (
+    <SectionProvider>
     <HashRouter>
       <AppShell
         header={{ height: 60 }}
@@ -42,12 +44,13 @@ export default function App() {
         padding="md"
       >
         <AppShell.Header>
-          <SiteHeader club={data.club} navOpen={opened} onNavToggle={toggle} />
+          <SiteHeader club={data.club} sections={data.teams.sections} navOpen={opened} onNavToggle={toggle} />
         </AppShell.Header>
 
         <AppShell.Navbar>
           <SiteSidebar
             club={data.club}
+            sections={data.teams.sections}
             sidebarFeeds={data.sidebarFeeds}
             onNavClick={close}
           />
@@ -59,7 +62,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage club={data.club} />} />
             <Route path="/teams" element={<TeamsPage teams={data.teams} liveTeams={data.liveTeams} />} />
             <Route path="/teams/:teamSlug" element={<TeamPage liveTeams={data.liveTeams} />} />
-            <Route path="/fixtures" element={<FixturesResultsPage feed={data.clubFeed} />} />
+            <Route path="/fixtures" element={<FixturesResultsPage feed={data.clubFeed} teams={data.teams} liveTeams={data.liveTeams} />} />
             <Route path="/register" element={<RegisterPage items={data.registration} />} />
             <Route path="/committee" element={<CommitteePage committee={data.committee} teams={data.teams} />} />
             <Route path="/news" element={<NewsPage items={data.news} />} />
@@ -71,5 +74,6 @@ export default function App() {
         </AppShell.Main>
       </AppShell>
     </HashRouter>
+    </SectionProvider>
   );
 }
