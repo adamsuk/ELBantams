@@ -1,6 +1,6 @@
 import { createTheme } from '@mantine/core';
 
-const ORANGE_SHADES: [string, string, string, string, string, string, string, string, string, string] = [
+const ORANGE_SHADES: string[] = [
   '#fff4eb',
   '#ffe8d2',
   '#ffd0a8',
