@@ -4,7 +4,7 @@ import {
   IconHome, IconInfoCircle, IconUsers, IconCreditCard, IconId,
   IconNews, IconPhoto, IconMapPin, IconMail, IconCalendar,
 } from '@tabler/icons-react';
-import type { Club, ClubFeed, TeamFeed } from '../types';
+import type { Club, TeamFeed } from '../types';
 
 const NAV_ITEMS = [
   { to: '/',          label: 'Home',              icon: <IconHome size={16} /> },
@@ -56,11 +56,10 @@ function NextTeamFixture({ feed, label }: { feed: TeamFeed; label: string }) {
 interface Props {
   club: Club;
   sidebarFeeds?: { feed: TeamFeed; label: string }[];
-  clubFeed?: ClubFeed | null;
   onNavClick: () => void;
 }
 
-export function SiteSidebar({ club, sidebarFeeds, clubFeed, onNavClick }: Props) {
+export function SiteSidebar({ club, sidebarFeeds, onNavClick }: Props) {
   const { pathname } = useLocation();
 
   return (
@@ -85,40 +84,6 @@ export function SiteSidebar({ club, sidebarFeeds, clubFeed, onNavClick }: Props)
       {sidebarFeeds?.map(({ feed, label }) => (
         <NextTeamFixture key={label} feed={feed} label={`Next ${label} Fixture`} />
       ))}
-
-      {clubFeed && clubFeed.fixtures.length > 0 && (() => {
-        const today = new Date().toISOString().slice(0, 10);
-        const upcoming = clubFeed.fixtures
-          .filter((f) => f.date >= today)
-          .sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
-        const next = upcoming[0];
-        if (!next) return null;
-        const d = new Date(next.date + 'T00:00:00');
-        const dateStr = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-        return (
-          <>
-            <Divider my="sm" mx="md" />
-            <Text fw={600} size="xs" tt="uppercase" c="dimmed" px="md" pb="xs">
-              Next Youth Fixture
-            </Text>
-            <Paper mx="md" p="sm" withBorder radius="md">
-              <Badge color="orange" variant="light" size="xs" mb="xs">{next.division}</Badge>
-              <Text fw={700} size="sm" ta="center" lh={1.3}>
-                {next.home_team}
-              </Text>
-              <Text size="xs" c="dimmed" ta="center">vs</Text>
-              <Text fw={700} size="sm" ta="center" lh={1.3} mb="xs">
-                {next.away_team}
-              </Text>
-              <Group gap="xs" justify="center" wrap="nowrap">
-                <IconCalendar size={12} />
-                <Text size="xs" c="dimmed">{dateStr} · {next.time}</Text>
-              </Group>
-              <Text size="xs" c="dimmed" ta="center">{next.venue}</Text>
-            </Paper>
-          </>
-        );
-      })()}
 
       <Divider my="sm" mx="md" />
       <Text fw={600} size="xs" tt="uppercase" c="dimmed" px="md" pb="xs">
