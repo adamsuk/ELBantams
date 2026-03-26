@@ -88,17 +88,13 @@ export interface MatchdayItem {
   text: string;
 }
 
-export interface Fixture {
-  competition: string;
-  homeTeam: string;
-  awayTeam: string;
-  date: string;
-  kickoff: string;
-  venue: string;
+export interface SidebarFeedConfig {
+  slug: string;
+  label: string;
 }
 
 export interface FixturesData {
-  next: Fixture;
+  sidebarFeeds?: SidebarFeedConfig[];
 }
 
 export interface BantamsFixture {
@@ -149,11 +145,9 @@ export interface AppData {
   committee: CommitteeData;
   registration: RegistrationItem[];
   news: NewsItem[];
-  fixtures: FixturesData;
   gallery: GalleryItem[];
   matchday: MatchdayItem[];
   bantamsFeed: BantamsFeed | null;
   bantamsTeams: BantamsTeam[];
-  robinsFeed: BantamsTeamFeed | null;
-  ladiesFeed: BantamsTeamFeed | null;
+  sidebarFeeds: { feed: BantamsTeamFeed; label: string }[];
 }

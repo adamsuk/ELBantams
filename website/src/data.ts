@@ -1,4 +1,4 @@
-import type { AppData, BantamsFeed, BantamsTeam, BantamsTeamFeed } from './types';
+import type { AppData, BantamsFeed, BantamsTeam, BantamsTeamFeed, FixturesData } from './types';
 
 const BASE = 'data/';
 const FEEDS_BASE = 'https://raw.githubusercontent.com/adamsuk/fulltimeCalendar/main/feeds/';
@@ -60,7 +60,7 @@ async function loadBantamsTeams(): Promise<BantamsTeam[]> {
 }
 
 export async function loadAllData(): Promise<AppData> {
-  const [club, teams, committee, registration, news, fixtures, gallery, matchday, bantamsFeed, bantamsTeams] =
+  const [club, teams, committee, registration, news, fixturesConfig, gallery, matchday, bantamsFeed, bantamsTeams] =
     await Promise.all([
       load('club.json'),
       load('teams.json'),
@@ -74,12 +74,16 @@ export async function loadAllData(): Promise<AppData> {
       loadBantamsTeams(),
     ]);
 
-  const robinsTeam = (bantamsTeams as BantamsTeam[]).find(t => t.slug === 'east-leake-robins-fc');
-  const ladiesTeam = (bantamsTeams as BantamsTeam[]).find(t => t.slug === 'east-leake-fc-ladies');
-  const [robinsFeed, ladiesFeed] = await Promise.all([
-    robinsTeam ? loadTeamFeed(robinsTeam.league, robinsTeam.slug) : Promise.resolve(null),
-    ladiesTeam ? loadTeamFeed(ladiesTeam.league, ladiesTeam.slug) : Promise.resolve(null),
-  ]);
+  const configuredFeeds = (fixturesConfig as FixturesData).sidebarFeeds ?? [];
+  const resolvedFeeds = await Promise.all(
+    configuredFeeds.map(async ({ slug, label }) => {
+      const team = (bantamsTeams as BantamsTeam[]).find(t => t.slug === slug);
+      if (!team) return null;
+      const feed = await loadTeamFeed(team.league, team.slug);
+      return feed ? { feed, label } : null;
+    })
+  );
+  const sidebarFeeds = resolvedFeeds.filter((f): f is { feed: BantamsTeamFeed; label: string } => f !== null);
 
-  return { club, teams, committee, registration, news, fixtures, gallery, matchday, bantamsFeed, bantamsTeams, robinsFeed, ladiesFeed } as AppData;
+  return { club, teams, committee, registration, news, gallery, matchday, bantamsFeed, bantamsTeams, sidebarFeeds } as AppData;
 }

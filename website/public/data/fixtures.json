@@ -1,10 +1,6 @@
 {
-  "next": {
-    "competition": "League — Robins First Team",
-    "homeTeam": "East Leake FC",
-    "awayTeam": "Arnold Town Res.",
-    "date": "Sat 22 Mar 2026",
-    "kickoff": "15:00 KO",
-    "venue": "Home — Costock Road"
-  }
+  "sidebarFeeds": [
+    { "slug": "east-leake-robins-fc", "label": "Men's First Team" },
+    { "slug": "east-leake-fc-ladies", "label": "Women's Team" }
+  ]
 }

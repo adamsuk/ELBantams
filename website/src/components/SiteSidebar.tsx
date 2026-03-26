@@ -55,13 +55,12 @@ function NextTeamFixture({ feed, label }: { feed: BantamsTeamFeed; label: string
 
 interface Props {
   club: Club;
-  robinsFeed?: BantamsTeamFeed | null;
-  ladiesFeed?: BantamsTeamFeed | null;
+  sidebarFeeds?: { feed: BantamsTeamFeed; label: string }[];
   bantamsFeed?: BantamsFeed | null;
   onNavClick: () => void;
 }
 
-export function SiteSidebar({ club, robinsFeed, ladiesFeed, bantamsFeed, onNavClick }: Props) {
+export function SiteSidebar({ club, sidebarFeeds, bantamsFeed, onNavClick }: Props) {
   const { pathname } = useLocation();
 
   return (
@@ -83,8 +82,9 @@ export function SiteSidebar({ club, robinsFeed, ladiesFeed, bantamsFeed, onNavCl
         />
       ))}
 
-      {robinsFeed && <NextTeamFixture feed={robinsFeed} label="Next Robins Fixture" />}
-      {ladiesFeed && <NextTeamFixture feed={ladiesFeed} label="Next Ladies Fixture" />}
+      {sidebarFeeds?.map(({ feed, label }) => (
+        <NextTeamFixture key={label} feed={feed} label={`Next ${label} Fixture`} />
+      ))}
 
       {bantamsFeed && bantamsFeed.fixtures.length > 0 && (() => {
         const today = new Date().toISOString().slice(0, 10);
@@ -99,7 +99,7 @@ export function SiteSidebar({ club, robinsFeed, ladiesFeed, bantamsFeed, onNavCl
           <>
             <Divider my="sm" mx="md" />
             <Text fw={600} size="xs" tt="uppercase" c="dimmed" px="md" pb="xs">
-              Next Bantams Fixture
+              Next Youth Fixture
             </Text>
             <Paper mx="md" p="sm" withBorder radius="md">
               <Badge color="orange" variant="light" size="xs" mb="xs">{next.division}</Badge>

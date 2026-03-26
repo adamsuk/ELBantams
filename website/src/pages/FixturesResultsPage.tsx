@@ -127,7 +127,7 @@ export function FixturesResultsPage({ feed }: Props) {
 
       <Select
         label="Filter by team"
-        placeholder="All Bantams teams"
+        placeholder="All teams"
         data={teamNames}
         value={selectedTeam}
         onChange={(value) => setSelectedTeam(value)}
