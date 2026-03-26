@@ -62,7 +62,7 @@ export default function App() {
             <Route path="/about" element={<AboutPage club={data.club} />} />
             <Route path="/teams" element={<TeamsPage teams={data.teams} liveTeams={data.liveTeams} />} />
             <Route path="/teams/:teamSlug" element={<TeamPage liveTeams={data.liveTeams} />} />
-            <Route path="/fixtures" element={<FixturesResultsPage feed={data.clubFeed} />} />
+            <Route path="/fixtures" element={<FixturesResultsPage feed={data.clubFeed} teams={data.teams} liveTeams={data.liveTeams} />} />
             <Route path="/register" element={<RegisterPage items={data.registration} />} />
             <Route path="/committee" element={<CommitteePage committee={data.committee} teams={data.teams} />} />
             <Route path="/news" element={<NewsPage items={data.news} />} />
