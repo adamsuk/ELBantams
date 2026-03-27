@@ -1,4 +1,4 @@
-import { TextInput, Textarea, Select, Stack, Group, Title, Paper, Button, Text, Switch, Divider, Accordion, Alert } from '@mantine/core';
+import { TextInput, Textarea, Select, Autocomplete, Stack, Group, Title, Paper, Button, Text, Switch, Divider, Accordion, Alert } from '@mantine/core';
 import { IconPlus, IconTrash, IconInfoCircle } from '@tabler/icons-react';
 import type { TeamsData, TeamSection, Team } from '../../types';
 import type { FeedTeamEntry } from '../../data';
@@ -15,7 +15,7 @@ function TeamEditor({ team, onChange, onRemove, matchingFeedTeams }: {
   team: Team;
   onChange: (t: Team) => void;
   onRemove: () => void;
-  matchingFeedTeams?: { value: string; label: string }[];
+  matchingFeedTeams?: string[];
 }) {
   const update = <K extends keyof Team>(key: K, value: Team[K]) =>
     onChange({ ...team, [key]: value });
@@ -38,20 +38,15 @@ function TeamEditor({ team, onChange, onRemove, matchingFeedTeams }: {
         </Group>
         <Group grow>
           <TextInput label="Contact" value={team.contact} onChange={e => update('contact', e.target.value)} />
-          {matchingFeedTeams && matchingFeedTeams.length > 0 ? (
-            <Select
-              label="Feed Team"
-              description="Select from fulltimeCalendar — do not create, just link"
-              data={matchingFeedTeams}
-              value={team.slug ?? ''}
-              onChange={v => update('slug', v || undefined)}
-              searchable
-              clearable
-              nothingFoundMessage="No matching teams"
-            />
-          ) : (
-            <TextInput label="Feed Slug" description="For live fixtures" value={team.slug ?? ''} onChange={e => update('slug', e.target.value || undefined)} />
-          )}
+          <Autocomplete
+            label="Feed Team"
+            description={matchingFeedTeams && matchingFeedTeams.length > 0 ? 'Type to search or enter a custom slug' : 'For live fixtures'}
+            data={matchingFeedTeams ?? []}
+            value={team.slug ?? ''}
+            onChange={v => update('slug', v || undefined)}
+            limit={20}
+            placeholder="Search teams..."
+          />
         </Group>
         <Switch
           label="Show next fixture in sidebar"
@@ -67,7 +62,7 @@ function SectionEditor({ section, onChange, onRemove, matchingFeedTeams }: {
   section: TeamSection;
   onChange: (s: TeamSection) => void;
   onRemove: () => void;
-  matchingFeedTeams?: { value: string; label: string }[];
+  matchingFeedTeams?: string[];
 }) {
   const update = <K extends keyof TeamSection>(key: K, value: TeamSection[K]) =>
     onChange({ ...section, [key]: value });
@@ -134,8 +129,8 @@ export function TeamsForm({ teams, onChange, feedTeams, teamSlugPrefix }: Props)
   const matchingFeedTeams = feedTeams && teamSlugPrefix
     ? feedTeams
         .filter(t => t.slug.startsWith(teamSlugPrefix))
-        .map(t => ({ value: t.slug, label: `${t.name}  (${t.slug})` }))
-        .sort((a, b) => a.label.localeCompare(b.label))
+        .map(t => t.slug)
+        .sort()
     : undefined;
 
   return (
