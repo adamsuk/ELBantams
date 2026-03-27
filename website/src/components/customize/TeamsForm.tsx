@@ -1,4 +1,4 @@
-import { TextInput, Textarea, Select, Autocomplete, Stack, Group, Title, Paper, Button, Text, Switch, Divider, Accordion, Alert } from '@mantine/core';
+import { TextInput, Textarea, Select, Stack, Group, Title, Paper, Button, Text, Switch, Divider, Accordion, Alert } from '@mantine/core';
 import { IconPlus, IconTrash, IconInfoCircle } from '@tabler/icons-react';
 import type { TeamsData, TeamSection, Team } from '../../types';
 import type { FeedTeamEntry } from '../../data';
@@ -38,15 +38,26 @@ function TeamEditor({ team, onChange, onRemove, matchingFeedTeams }: {
         </Group>
         <Group grow>
           <TextInput label="Contact" value={team.contact} onChange={e => update('contact', e.target.value)} />
-          <Autocomplete
-            label="Feed Team"
-            description={matchingFeedTeams && matchingFeedTeams.length > 0 ? 'Type to search or enter a custom slug' : 'For live fixtures'}
-            data={matchingFeedTeams ?? []}
-            value={team.slug ?? ''}
-            onChange={v => update('slug', v || undefined)}
-            limit={20}
-            placeholder="Search teams..."
-          />
+          <Stack gap={4} style={{ flex: 1 }}>
+            <TextInput
+              label="Feed Team Slug"
+              description="For live fixtures"
+              value={team.slug ?? ''}
+              onChange={e => update('slug', e.target.value || undefined)}
+              placeholder="e.g. my-club-first-team"
+            />
+            {matchingFeedTeams && matchingFeedTeams.length > 0 && (
+              <Select
+                size="xs"
+                placeholder="Quick-pick from feed..."
+                data={matchingFeedTeams}
+                value={null}
+                onChange={v => { if (v) update('slug', v); }}
+                searchable
+                clearable={false}
+              />
+            )}
+          </Stack>
         </Group>
         <Switch
           label="Show next fixture in sidebar"
