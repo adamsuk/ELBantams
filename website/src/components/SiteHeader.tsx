@@ -110,6 +110,20 @@ export function SiteHeader({ club, sections, navOpen, onNavToggle }: Props) {
           </ActionIcon>
         )}
 
+        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
+          {logosToShow.map(s => (
+            <img
+              key={s.id}
+              src={s.logo}
+              alt={`${s.name} logo`}
+              height={44}
+              width={44}
+              style={{ objectFit: 'contain', display: 'block', flexShrink: 0 }}
+              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          ))}
+        </Group>
+
         {!authLoading && !user && (
           <Button
             component={Link}
@@ -148,20 +162,6 @@ export function SiteHeader({ club, sections, navOpen, onNavToggle }: Props) {
             </Menu.Dropdown>
           </Menu>
         )}
-
-        <Group gap={4} wrap="nowrap" style={{ flexShrink: 0 }}>
-          {logosToShow.map(s => (
-            <img
-              key={s.id}
-              src={s.logo}
-              alt={`${s.name} logo`}
-              height={44}
-              width={44}
-              style={{ objectFit: 'contain', display: 'block', flexShrink: 0 }}
-              onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }}
-            />
-          ))}
-        </Group>
       </Group>
     </Group>
   );
