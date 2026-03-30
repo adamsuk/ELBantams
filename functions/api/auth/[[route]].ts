@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { createAuth } from "../../lib/auth";
+import { ensureTables } from "../../lib/ensure-tables";
 
 interface Env {
   DB: D1Database;
@@ -16,6 +17,7 @@ app.all("/api/auth/*", async (c) => {
     return c.json({ error: "BETTER_AUTH_SECRET not set" }, 500);
   }
   try {
+    await ensureTables(c.env.DB);
     const auth = createAuth(c.env);
     return auth.handler(c.req.raw);
   } catch (e) {

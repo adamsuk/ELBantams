@@ -1,4 +1,5 @@
 import { createAuth } from "../lib/auth";
+import { ensureTables } from "../lib/ensure-tables";
 
 interface Env {
   DB: D1Database;
@@ -6,6 +7,7 @@ interface Env {
 }
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
+  await ensureTables(context.env.DB);
   const auth = createAuth(context.env);
   const session = await auth.api.getSession({
     headers: context.request.headers,
