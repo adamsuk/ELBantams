@@ -87,7 +87,7 @@ export function CustomizePage({
       <Paper p="md" withBorder>
         <Group justify="space-between" wrap="wrap">
           <Group gap="sm">
-            <SaveButton data={localData} />
+            <SaveButton data={localData} originalData={originalData} />
             <Button
               variant="light"
               onClick={applyPreview}

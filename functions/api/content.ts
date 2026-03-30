@@ -9,14 +9,38 @@ interface Env {
   GITHUB_BRANCH?: string;
 }
 
-interface ContentRequest {
+interface FileEntry {
   file: string;
   content: unknown;
+}
+
+interface ContentRequest {
+  files: FileEntry[];
   message?: string;
 }
 
+const ALLOWED_PATHS = new Set([
+  "website/public/data/club.json",
+  "website/public/data/teams.json",
+  "website/public/data/committee.json",
+  "website/public/data/news.json",
+  "website/public/data/registration.json",
+  "website/public/data/matchday.json",
+  "website/public/data/gallery.json",
+]);
+
+function gh(token: string) {
+  const headers = {
+    Authorization: `Bearer ${token}`,
+    Accept: "application/vnd.github.v3+json",
+    "Content-Type": "application/json",
+    "User-Agent": "ELBantams-CMS",
+  };
+  return async (url: string, options?: RequestInit) =>
+    fetch(url, { ...options, headers: { ...headers, ...options?.headers } });
+}
+
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-  // Ensure tables exist and verify admin session
   await ensureTables(context.env.DB);
   const auth = createAuth(context.env);
   const session = await auth.api.getSession({
@@ -38,33 +62,23 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
-  // Parse request
   const body = (await context.request.json()) as ContentRequest;
-  const { file, content, message } = body;
+  const { files, message } = body;
 
-  if (!file || content === undefined) {
-    return new Response(JSON.stringify({ error: "file and content required" }), {
+  if (!files || !Array.isArray(files) || files.length === 0) {
+    return new Response(JSON.stringify({ error: "files array required" }), {
       status: 400,
       headers: { "Content-Type": "application/json" },
     });
   }
 
-  // Validate file path is within allowed data directory
-  const allowedPaths = [
-    "website/public/data/club.json",
-    "website/public/data/teams.json",
-    "website/public/data/committee.json",
-    "website/public/data/news.json",
-    "website/public/data/registration.json",
-    "website/public/data/matchday.json",
-    "website/public/data/gallery.json",
-  ];
-
-  if (!allowedPaths.includes(file)) {
-    return new Response(JSON.stringify({ error: "Invalid file path" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+  for (const f of files) {
+    if (!ALLOWED_PATHS.has(f.file)) {
+      return new Response(JSON.stringify({ error: `Invalid file path: ${f.file}` }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
   }
 
   const repo = context.env.GITHUB_REPO ?? "adamsuk/ELBantams";
@@ -78,60 +92,72 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
     });
   }
 
+  const api = gh(token);
+  const base = `https://api.github.com/repos/${repo}`;
+
   try {
-    // Get current file SHA (required for updates)
-    const getRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}?ref=${branch}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "ELBantams-CMS",
-        },
-      }
-    );
+    // 1. Get the latest commit SHA and its tree SHA for the branch
+    const refRes = await api(`${base}/git/ref/heads/${branch}`);
+    if (!refRes.ok) throw new Error(`Failed to get branch ref: ${await refRes.text()}`);
+    const refData = (await refRes.json()) as { object: { sha: string } };
+    const latestCommitSha = refData.object.sha;
 
-    let sha: string | undefined;
-    if (getRes.ok) {
-      const existing = (await getRes.json()) as { sha: string };
-      sha = existing.sha;
-    }
+    const commitRes = await api(`${base}/git/commits/${latestCommitSha}`);
+    if (!commitRes.ok) throw new Error(`Failed to get commit: ${await commitRes.text()}`);
+    const commitData = (await commitRes.json()) as { tree: { sha: string } };
+    const baseTreeSha = commitData.tree.sha;
 
-    // Commit the file
-    const encoded = btoa(
-      unescape(encodeURIComponent(JSON.stringify(content, null, 2) + "\n"))
-    );
-
-    const putRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "Content-Type": "application/json",
-          "User-Agent": "ELBantams-CMS",
-        },
-        body: JSON.stringify({
-          message: message ?? `Update ${file.split("/").pop()} via CMS`,
-          content: encoded,
-          sha,
-          branch,
-        }),
-      }
-    );
-
-    if (!putRes.ok) {
-      const err = await putRes.text();
-      return new Response(
-        JSON.stringify({ error: "GitHub API error", details: err }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
+    // 2. Create blobs for each file
+    const treeEntries: { path: string; mode: string; type: string; sha: string }[] = [];
+    for (const f of files) {
+      const encoded = btoa(
+        unescape(encodeURIComponent(JSON.stringify(f.content, null, 2) + "\n"))
       );
+      const blobRes = await api(`${base}/git/blobs`, {
+        method: "POST",
+        body: JSON.stringify({ content: encoded, encoding: "base64" }),
+      });
+      if (!blobRes.ok) throw new Error(`Failed to create blob: ${await blobRes.text()}`);
+      const blobData = (await blobRes.json()) as { sha: string };
+      treeEntries.push({
+        path: f.file,
+        mode: "100644",
+        type: "blob",
+        sha: blobData.sha,
+      });
     }
 
-    const result = (await putRes.json()) as { commit: { sha: string } };
+    // 3. Create a new tree with changes
+    const treeRes = await api(`${base}/git/trees`, {
+      method: "POST",
+      body: JSON.stringify({ base_tree: baseTreeSha, tree: treeEntries }),
+    });
+    if (!treeRes.ok) throw new Error(`Failed to create tree: ${await treeRes.text()}`);
+    const treeData = (await treeRes.json()) as { sha: string };
+
+    // 4. Create a new commit
+    const changedNames = files.map(f => f.file.split("/").pop()).join(", ");
+    const commitMsg = message ?? `Update ${changedNames} via CMS`;
+    const newCommitRes = await api(`${base}/git/commits`, {
+      method: "POST",
+      body: JSON.stringify({
+        message: commitMsg,
+        tree: treeData.sha,
+        parents: [latestCommitSha],
+      }),
+    });
+    if (!newCommitRes.ok) throw new Error(`Failed to create commit: ${await newCommitRes.text()}`);
+    const newCommitData = (await newCommitRes.json()) as { sha: string };
+
+    // 5. Update the branch ref
+    const updateRefRes = await api(`${base}/git/refs/heads/${branch}`, {
+      method: "PATCH",
+      body: JSON.stringify({ sha: newCommitData.sha }),
+    });
+    if (!updateRefRes.ok) throw new Error(`Failed to update ref: ${await updateRefRes.text()}`);
+
     return new Response(
-      JSON.stringify({ ok: true, commit: result.commit.sha }),
+      JSON.stringify({ ok: true, commit: newCommitData.sha }),
       { headers: { "Content-Type": "application/json" } }
     );
   } catch (err) {

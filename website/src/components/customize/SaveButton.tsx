@@ -5,6 +5,7 @@ import type { AppData } from '../../types';
 
 interface Props {
   data: AppData;
+  originalData: AppData;
 }
 
 const FILE_MAP: { key: keyof Pick<AppData, 'club' | 'teams' | 'committee' | 'registration' | 'news' | 'gallery' | 'matchday'>; file: string; wrap?: boolean }[] = [
@@ -17,28 +18,44 @@ const FILE_MAP: { key: keyof Pick<AppData, 'club' | 'teams' | 'committee' | 'reg
   { key: 'matchday', file: 'website/public/data/matchday.json', wrap: true },
 ];
 
-export function SaveButton({ data }: Props) {
+export function SaveButton({ data, originalData }: Props) {
   const [saving, setSaving] = useState(false);
-  const [result, setResult] = useState<'success' | 'error' | null>(null);
+  const [result, setResult] = useState<'success' | 'error' | 'nochanges' | null>(null);
 
   const handleSave = async () => {
     setSaving(true);
     setResult(null);
 
     try {
-      for (const { key, file, wrap } of FILE_MAP) {
-        const content = wrap ? { items: data[key] } : data[key];
-        const res = await fetch('/api/content', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ file, content }),
-        });
+      const changedFiles: { file: string; content: unknown }[] = [];
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({}));
-          throw new Error((err as { error?: string }).error ?? `Failed to save ${file}`);
+      for (const { key, file, wrap } of FILE_MAP) {
+        const currentJson = JSON.stringify(data[key]);
+        const originalJson = JSON.stringify(originalData[key]);
+        if (currentJson !== originalJson) {
+          changedFiles.push({
+            file,
+            content: wrap ? { items: data[key] } : data[key],
+          });
         }
       }
+
+      if (changedFiles.length === 0) {
+        setResult('nochanges');
+        return;
+      }
+
+      const res = await fetch('/api/content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ files: changedFiles }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as { error?: string }).error ?? 'Failed to save');
+      }
+
       setResult('success');
     } catch {
       setResult('error');
@@ -56,7 +73,7 @@ export function SaveButton({ data }: Props) {
         loading={saving}
         color={result === 'success' ? 'green' : result === 'error' ? 'red' : undefined}
       >
-        {result === 'success' ? 'Saved!' : result === 'error' ? 'Error' : 'Save to Site'}
+        {result === 'success' ? 'Saved!' : result === 'error' ? 'Error' : result === 'nochanges' ? 'No changes' : 'Save to Site'}
       </Button>
       {result === 'success' && (
         <Group gap={4}>
