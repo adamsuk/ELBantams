@@ -4,140 +4,181 @@ import { ensureTables } from "../lib/ensure-tables";
 interface Env {
   DB: D1Database;
   BETTER_AUTH_SECRET: string;
-  GITHUB_TOKEN: string;
-  GITHUB_REPO?: string;
-  GITHUB_BRANCH?: string;
+  BETTER_AUTH_URL?: string;
 }
 
-interface ContentRequest {
-  file: string;
-  content: unknown;
-  message?: string;
+function json(data: unknown, init?: ResponseInit) {
+  return new Response(JSON.stringify(data), {
+    ...(init ?? {}),
+    headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) },
+  });
 }
 
 export const onRequestPost: PagesFunction<Env> = async (context) => {
-  // Ensure tables exist and verify admin session
   await ensureTables(context.env.DB);
-  const auth = createAuth(context.env);
-  const session = await auth.api.getSession({
-    headers: context.request.headers,
-  });
 
-  if (!session) {
-    return new Response(JSON.stringify({ error: "Not authenticated" }), {
-      status: 401,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const auth = createAuth(context.env);
+  const session = await auth.api.getSession({ headers: context.request.headers });
+  if (!session) return json({ error: "Not authenticated" }, { status: 401 });
 
   const role = (session.user as Record<string, unknown>).role;
-  if (role !== "admin") {
-    return new Response(JSON.stringify({ error: "Admin access required" }), {
-      status: 403,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  if (role !== "admin") return json({ error: "Admin access required" }, { status: 403 });
 
-  // Parse request
-  const body = (await context.request.json()) as ContentRequest;
-  const { file, content, message } = body;
+  const body = (await context.request.json()) as { file: string; content: unknown };
+  const { file, content } = body;
 
   if (!file || content === undefined) {
-    return new Response(JSON.stringify({ error: "file and content required" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
+    return json({ error: "file and content required" }, { status: 400 });
   }
 
-  // Validate file path is within allowed data directory
-  const allowedPaths = [
-    "website/public/data/club.json",
-    "website/public/data/teams.json",
-    "website/public/data/committee.json",
-    "website/public/data/news.json",
-    "website/public/data/registration.json",
-    "website/public/data/matchday.json",
-    "website/public/data/gallery.json",
-  ];
-
-  if (!allowedPaths.includes(file)) {
-    return new Response(JSON.stringify({ error: "Invalid file path" }), {
-      status: 400,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
-
-  const repo = context.env.GITHUB_REPO ?? "adamsuk/ELBantams";
-  const branch = context.env.GITHUB_BRANCH ?? "main";
-  const token = context.env.GITHUB_TOKEN;
-
-  if (!token) {
-    return new Response(JSON.stringify({ error: "GitHub token not configured" }), {
-      status: 500,
-      headers: { "Content-Type": "application/json" },
-    });
-  }
+  const db = context.env.DB;
+  const ts = Date.now();
 
   try {
-    // Get current file SHA (required for updates)
-    const getRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}?ref=${branch}`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "User-Agent": "ELBantams-CMS",
-        },
-      }
-    );
+    if (file === "website/public/data/news.json") {
+      const { items } = content as {
+        items: Array<{
+          title: string;
+          text: string;
+          body?: string | null;
+          link: string;
+          linkText: string;
+          sections?: string[] | null;
+        }>;
+      };
 
-    let sha: string | undefined;
-    if (getRes.ok) {
-      const existing = (await getRes.json()) as { sha: string };
-      sha = existing.sha;
+      const stmts: D1PreparedStatement[] = [db.prepare("DELETE FROM news_item")];
+      for (const item of items ?? []) {
+        stmts.push(
+          db.prepare(
+            `INSERT INTO news_item (id, title, text, body, link, linkText, sections, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            `news_${crypto.randomUUID()}`,
+            item.title ?? "",
+            item.text ?? "",
+            item.body ?? null,
+            item.link ?? "#",
+            item.linkText ?? "Read More",
+            item.sections?.length ? JSON.stringify(item.sections) : null,
+            ts,
+            ts
+          )
+        );
+      }
+      await db.batch(stmts);
+      return json({ ok: true });
     }
 
-    // Commit the file
-    const encoded = btoa(
-      unescape(encodeURIComponent(JSON.stringify(content, null, 2) + "\n"))
-    );
+    if (file === "website/public/data/committee.json") {
+      const { committee } = content as {
+        committee: Array<{ role: string; name: string; contact: string }>;
+      };
 
-    const putRes = await fetch(
-      `https://api.github.com/repos/${repo}/contents/${file}`,
-      {
-        method: "PUT",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: "application/vnd.github.v3+json",
-          "Content-Type": "application/json",
-          "User-Agent": "ELBantams-CMS",
-        },
-        body: JSON.stringify({
-          message: message ?? `Update ${file.split("/").pop()} via CMS`,
-          content: encoded,
-          sha,
-          branch,
-        }),
+      const stmts: D1PreparedStatement[] = [db.prepare("DELETE FROM committee_member")];
+      for (let i = 0; i < (committee ?? []).length; i++) {
+        const member = committee[i];
+        stmts.push(
+          db.prepare(
+            `INSERT INTO committee_member (id, role, name, contact, sortOrder, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            `committee_${crypto.randomUUID()}`,
+            member.role ?? "",
+            member.name ?? "TBC",
+            member.contact ?? "TBC",
+            i,
+            ts,
+            ts
+          )
+        );
       }
-    );
-
-    if (!putRes.ok) {
-      const err = await putRes.text();
-      return new Response(
-        JSON.stringify({ error: "GitHub API error", details: err }),
-        { status: 502, headers: { "Content-Type": "application/json" } }
-      );
+      await db.batch(stmts);
+      return json({ ok: true });
     }
 
-    const result = (await putRes.json()) as { commit: { sha: string } };
-    return new Response(
-      JSON.stringify({ ok: true, commit: result.commit.sha }),
-      { headers: { "Content-Type": "application/json" } }
-    );
+    if (file === "website/public/data/teams.json") {
+      const { sections } = content as {
+        sections: Array<{
+          id: string; // sectionKey in the frontend (e.g. "robins")
+          name: string;
+          subtitle: string;
+          icon: string;
+          logo?: string | null;
+          teams: Array<{
+            name: string;
+            description: string;
+            manager: string;
+            coach: string;
+            contact: string;
+            photo?: string | null;
+            slug?: string | null;
+            sidebar?: boolean;
+            managerLabel?: string | null;
+            coachLabel?: string | null;
+          }>;
+        }>;
+      };
+
+      // Delete teams before sections to respect the foreign key constraint
+      const stmts: D1PreparedStatement[] = [
+        db.prepare("DELETE FROM team"),
+        db.prepare("DELETE FROM team_section"),
+      ];
+
+      for (let si = 0; si < (sections ?? []).length; si++) {
+        const section = sections[si];
+        const sectionId = `section_${crypto.randomUUID()}`;
+        stmts.push(
+          db.prepare(
+            `INSERT INTO team_section (id, sectionKey, name, subtitle, icon, logo, sortOrder, createdAt, updatedAt)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+          ).bind(
+            sectionId,
+            section.id,
+            section.name,
+            section.subtitle ?? "",
+            section.icon ?? "fa-shield-alt",
+            section.logo || null,
+            si,
+            ts,
+            ts
+          )
+        );
+
+        for (let ti = 0; ti < (section.teams ?? []).length; ti++) {
+          const team = section.teams[ti];
+          stmts.push(
+            db.prepare(
+              `INSERT INTO team (id, sectionId, name, description, manager, coach, contact, photo, slug, sidebar, managerLabel, coachLabel, sortOrder, createdAt, updatedAt)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+            ).bind(
+              `team_${crypto.randomUUID()}`,
+              sectionId,
+              team.name ?? "",
+              team.description ?? "",
+              team.manager ?? "TBC",
+              team.coach ?? "TBC",
+              team.contact ?? "TBC",
+              team.photo || null,
+              team.slug || null,
+              team.sidebar ? 1 : 0,
+              team.managerLabel || null,
+              team.coachLabel || null,
+              ti,
+              ts,
+              ts
+            )
+          );
+        }
+      }
+
+      await db.batch(stmts);
+      return json({ ok: true });
+    }
+
+    return json({ error: "Invalid file path" }, { status: 400 });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: "Failed to commit", details: String(err) }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
-    );
+    return json({ error: "Failed to save", details: String(err) }, { status: 500 });
   }
 };

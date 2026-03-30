@@ -5,6 +5,7 @@ import { ensureTables } from "../../lib/ensure-tables";
 interface Env {
   DB: D1Database;
   BETTER_AUTH_SECRET: string;
+  BETTER_AUTH_URL?: string;
 }
 
 const app = new Hono<{ Bindings: Env }>();
@@ -18,7 +19,8 @@ app.all("/api/auth/*", async (c) => {
   }
   try {
     await ensureTables(c.env.DB);
-    const auth = createAuth(c.env);
+    const baseURL = c.env.BETTER_AUTH_URL ?? new URL(c.req.url).origin;
+    const auth = createAuth(c.env, { baseURL });
     return auth.handler(c.req.raw);
   } catch (e) {
     return c.json({ error: "Auth error", details: String(e) }, 500);

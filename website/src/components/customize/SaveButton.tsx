@@ -7,14 +7,10 @@ interface Props {
   data: AppData;
 }
 
-const FILE_MAP: { key: keyof Pick<AppData, 'club' | 'teams' | 'committee' | 'registration' | 'news' | 'gallery' | 'matchday'>; file: string; wrap?: boolean }[] = [
-  { key: 'club', file: 'website/public/data/club.json' },
+const FILE_MAP: { key: keyof Pick<AppData, 'teams' | 'committee' | 'news'>; file: string; wrap?: boolean }[] = [
   { key: 'teams', file: 'website/public/data/teams.json' },
   { key: 'committee', file: 'website/public/data/committee.json' },
-  { key: 'registration', file: 'website/public/data/registration.json', wrap: true },
   { key: 'news', file: 'website/public/data/news.json', wrap: true },
-  { key: 'gallery', file: 'website/public/data/gallery.json', wrap: true },
-  { key: 'matchday', file: 'website/public/data/matchday.json', wrap: true },
 ];
 
 export function SaveButton({ data }: Props) {

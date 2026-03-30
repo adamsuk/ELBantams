@@ -1,0 +1,423 @@
+openapi: 3.0.3
+info:
+  title: ELBantams Content API
+  version: 0.1.0
+  description: Admin-only CRUD endpoints for News, Committee, and Teams.
+servers:
+  - url: /
+tags:
+  - name: Content
+paths:
+  /api/news:
+    get:
+      tags: [Content]
+      summary: List news items
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/NewsItem"
+                required: [items]
+    post:
+      tags: [Content]
+      summary: Create a news item (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsItemCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  id: { type: string }
+                required: [ok, id]
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+  /api/news?id={id}:
+    patch:
+      tags: [Content]
+      summary: Update a news item (admin only)
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsItemUpdate"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Content]
+      summary: Delete a news item (admin only)
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+
+  /api/committee:
+    get:
+      tags: [Content]
+      summary: List committee members
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CommitteeMember"
+                required: [items]
+    post:
+      tags: [Content]
+      summary: Create committee member (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitteeMemberCreate"
+      responses:
+        "201": { $ref: "#/components/responses/CreatedWithId" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+  /api/committee?id={id}:
+    patch:
+      tags: [Content]
+      summary: Update committee member (admin only)
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CommitteeMemberUpdate"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Content]
+      summary: Delete committee member (admin only)
+      parameters:
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+
+  /api/teams:
+    get:
+      tags: [Content]
+      summary: List team sections and teams
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sections:
+                    type: array
+                    items: { $ref: "#/components/schemas/TeamSection" }
+                  teams:
+                    type: array
+                    items: { $ref: "#/components/schemas/Team" }
+                required: [sections, teams]
+    post:
+      tags: [Content]
+      summary: Create team section or team (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/TeamSectionCreate"
+                - $ref: "#/components/schemas/TeamCreate"
+      responses:
+        "201": { $ref: "#/components/responses/CreatedWithId" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+  /api/teams?type={type}&id={id}:
+    patch:
+      tags: [Content]
+      summary: Update a team section or team (admin only)
+      parameters:
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [section, team]
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - $ref: "#/components/schemas/TeamSectionUpdate"
+                - $ref: "#/components/schemas/TeamUpdate"
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    delete:
+      tags: [Content]
+      summary: Delete a team section or team (admin only)
+      parameters:
+        - in: query
+          name: type
+          required: true
+          schema:
+            type: string
+            enum: [section, team]
+        - in: query
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { $ref: "#/components/responses/Ok" }
+        "401": { $ref: "#/components/responses/NotAuthenticated" }
+        "403": { $ref: "#/components/responses/AdminRequired" }
+
+components:
+  responses:
+    Ok:
+      description: OK
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: { type: boolean }
+            required: [ok]
+    CreatedWithId:
+      description: Created
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              ok: { type: boolean }
+              id: { type: string }
+            required: [ok, id]
+    NotAuthenticated:
+      description: Not authenticated
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    AdminRequired:
+      description: Admin access required
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+  schemas:
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+      required: [error]
+
+    NewsItem:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        text: { type: string }
+        body: { type: string, nullable: true }
+        link: { type: string }
+        linkText: { type: string }
+        sections:
+          type: array
+          items: { type: string }
+          nullable: true
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+      required: [id, title, text, link, linkText, createdAt, updatedAt]
+    NewsItemCreate:
+      type: object
+      properties:
+        title: { type: string }
+        text: { type: string }
+        body: { type: string }
+        link: { type: string }
+        linkText: { type: string }
+        sections:
+          type: array
+          items: { type: string }
+    NewsItemUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        text: { type: string }
+        body: { type: string, nullable: true }
+        link: { type: string }
+        linkText: { type: string }
+        sections:
+          type: array
+          items: { type: string }
+          nullable: true
+
+    CommitteeMember:
+      type: object
+      properties:
+        id: { type: string }
+        role: { type: string }
+        name: { type: string }
+        contact: { type: string }
+        sortOrder: { type: integer }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+      required: [id, role, name, contact, sortOrder, createdAt, updatedAt]
+    CommitteeMemberCreate:
+      type: object
+      properties:
+        role: { type: string }
+        name: { type: string }
+        contact: { type: string }
+        sortOrder: { type: integer }
+      required: [role]
+    CommitteeMemberUpdate:
+      type: object
+      properties:
+        role: { type: string }
+        name: { type: string }
+        contact: { type: string }
+        sortOrder: { type: integer }
+
+    TeamSection:
+      type: object
+      properties:
+        id: { type: string }
+        sectionKey: { type: string }
+        name: { type: string }
+        subtitle: { type: string }
+        icon: { type: string }
+        logo: { type: string, nullable: true }
+        sortOrder: { type: integer }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+      required: [id, sectionKey, name, subtitle, icon, sortOrder, createdAt, updatedAt]
+    Team:
+      type: object
+      properties:
+        id: { type: string }
+        sectionId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        manager: { type: string }
+        coach: { type: string }
+        contact: { type: string }
+        photo: { type: string, nullable: true }
+        slug: { type: string, nullable: true }
+        sidebar: { type: integer }
+        managerLabel: { type: string, nullable: true }
+        coachLabel: { type: string, nullable: true }
+        sortOrder: { type: integer }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+      required: [id, sectionId, name, description, manager, coach, contact, sidebar, sortOrder, createdAt, updatedAt]
+    TeamSectionCreate:
+      type: object
+      properties:
+        type: { type: string, enum: [section] }
+        sectionKey: { type: string }
+        name: { type: string }
+        subtitle: { type: string }
+        icon: { type: string }
+        logo: { type: string }
+        sortOrder: { type: integer }
+      required: [type, sectionKey, name]
+    TeamCreate:
+      type: object
+      properties:
+        type: { type: string, enum: [team] }
+        sectionId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        manager: { type: string }
+        coach: { type: string }
+        contact: { type: string }
+        photo: { type: string }
+        slug: { type: string }
+        sidebar: { type: boolean }
+        managerLabel: { type: string }
+        coachLabel: { type: string }
+        sortOrder: { type: integer }
+      required: [type, sectionId, name]
+    TeamSectionUpdate:
+      type: object
+      properties:
+        sectionKey: { type: string }
+        name: { type: string }
+        subtitle: { type: string }
+        icon: { type: string }
+        logo: { type: string, nullable: true }
+        sortOrder: { type: integer }
+    TeamUpdate:
+      type: object
+      properties:
+        sectionId: { type: string }
+        name: { type: string }
+        description: { type: string }
+        manager: { type: string }
+        coach: { type: string }
+        contact: { type: string }
+        photo: { type: string, nullable: true }
+        slug: { type: string, nullable: true }
+        sidebar: { type: boolean }
+        managerLabel: { type: string, nullable: true }
+        coachLabel: { type: string, nullable: true }
+        sortOrder: { type: integer }
