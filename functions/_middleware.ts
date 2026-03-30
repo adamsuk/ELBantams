@@ -80,10 +80,14 @@ async function runMigrations(db: D1Database) {
 }
 
 export const onRequest: PagesFunction<Env> = async (context) => {
-  try {
-    await runMigrations(context.env.DB);
-  } catch (e) {
-    console.error("Migration error:", e);
+  if (context.env.DB) {
+    try {
+      await runMigrations(context.env.DB);
+    } catch (e) {
+      console.error("Migration error:", e);
+    }
+  } else {
+    console.error("D1 binding 'DB' not available");
   }
   return context.next();
 };
