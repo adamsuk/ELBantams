@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Stack, Title, Text, Tabs, Table, Badge, Button,
-  Select, Textarea, Alert, Group, Paper,
+  Autocomplete, Select, Textarea, Alert, Group, Paper,
 } from '@mantine/core';
 
 interface Pitch {
@@ -168,14 +168,12 @@ export function PitchBookingPage() {
               {error && <Alert color="red" variant="light" onClose={() => setError('')} withCloseButton>{error}</Alert>}
               {success && <Alert color="green" variant="light" onClose={() => setSuccess('')} withCloseButton>{success}</Alert>}
 
-              <Select
+              <Autocomplete
                 label="Team"
-                placeholder="Select your team"
-                value={teamName}
-                onChange={setTeamName}
-                data={teamOptions}
-                searchable
-                required
+                placeholder="Select or type your team name"
+                value={teamName ?? ''}
+                onChange={(val) => setTeamName(val || null)}
+                data={teamOptions.flatMap(g => g.items.map(i => i.value))}
               />
 
               <Stack gap={4}>
