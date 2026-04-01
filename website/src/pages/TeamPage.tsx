@@ -87,7 +87,8 @@ export function TeamPage({ liveTeams }: Props) {
 
   useEffect(() => {
     if (!teamMeta) { setContacts([]); return; }
-    fetch(`/api/team-contacts?slug=${encodeURIComponent(teamMeta.slug)}`)
+    const params = new URLSearchParams({ slug: teamMeta.slug, league: teamMeta.league });
+    fetch(`/api/team-contacts?${params}`)
       .then(r => r.ok ? r.json() : { contacts: [] })
       .then((d: { contacts: TeamContact[] }) => setContacts(d.contacts))
       .catch(() => setContacts([]));

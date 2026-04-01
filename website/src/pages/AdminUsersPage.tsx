@@ -88,7 +88,9 @@ export function AdminUsersPage({ liveTeams }: Props) {
       setAssignError('Please select a user, team, and role');
       return;
     }
-    const team = liveTeams.find(t => t.slug === newTeamSlug);
+    // newTeamSlug is encoded as "slug|league"
+    const [slug, league] = newTeamSlug.split('|');
+    const team = liveTeams.find(t => t.slug === slug && t.league === league);
     if (!team) {
       setAssignError('Team not found');
       return;
@@ -102,6 +104,7 @@ export function AdminUsersPage({ liveTeams }: Props) {
         body: JSON.stringify({
           userId: newUserId,
           teamSlug: team.slug,
+          teamLeague: team.league,
           teamName: team.name,
           role: newRole,
         }),
@@ -145,8 +148,8 @@ export function AdminUsersPage({ liveTeams }: Props) {
   }));
 
   const teamOptions = liveTeams.map(t => ({
-    value: t.slug,
-    label: t.name,
+    value: `${t.slug}|${t.league}`,
+    label: `${t.name} (${t.league})`,
   }));
 
   const roleOptions = [

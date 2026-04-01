@@ -63,7 +63,7 @@ export function HomePage({ club }: Props) {
                   </Badge>
                 </Group>
                 <Group gap="xs" mt="sm">
-                  <Button component={Link} to={`/teams/${t.teamSlug}`} size="xs" variant="light">
+                  <Button component={Link} to={`/teams/${t.teamLeague}/${t.teamSlug}`} size="xs" variant="light">
                     Fixtures &amp; Results
                   </Button>
                   {t.role !== 'subscriber' && (

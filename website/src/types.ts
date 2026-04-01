@@ -165,6 +165,7 @@ export interface AppData {
 export interface UserTeamRole {
   id: string;
   teamSlug: string;
+  teamLeague: string;
   teamName: string;
   role: 'coach' | 'manager' | 'subscriber';
 }
@@ -180,6 +181,7 @@ export interface TeamRoleAssignment extends UserTeamRole {
   userId: string;
   userName: string;
   userEmail: string;
+  createdAt: number;
 }
 
 export interface TeamFeed {

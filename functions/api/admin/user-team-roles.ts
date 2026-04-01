@@ -11,6 +11,7 @@ type UserTeamRoleRow = {
   id: string;
   userId: string;
   teamSlug: string;
+  teamLeague: string;
   teamName: string;
   role: string;
   createdAt: number;
@@ -58,7 +59,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
   const rows = await context.env.DB
     .prepare(`
-      SELECT utr.id, utr.userId, utr.teamSlug, utr.teamName, utr.role, utr.createdAt,
+      SELECT utr.id, utr.userId, utr.teamSlug, utr.teamLeague, utr.teamName, utr.role, utr.createdAt,
              u.name as userName, u.email as userEmail
       FROM user_team_role utr
       JOIN "user" u ON utr.userId = u.id
@@ -76,17 +77,20 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   const body = (await context.request.json()) as Partial<{
     userId: string;
     teamSlug: string;
+    teamLeague: string;
     teamName: string;
     role: string;
   }>;
 
   const userId = body.userId?.trim() ?? "";
   const teamSlug = body.teamSlug?.trim() ?? "";
+  const teamLeague = body.teamLeague?.trim() ?? "";
   const teamName = body.teamName?.trim() ?? "";
   const role = body.role?.trim() ?? "";
 
   if (!userId) return json({ error: "userId is required" }, { status: 400 });
   if (!teamSlug) return json({ error: "teamSlug is required" }, { status: 400 });
+  if (!teamLeague) return json({ error: "teamLeague is required" }, { status: 400 });
   if (!teamName) return json({ error: "teamName is required" }, { status: 400 });
   if (!role) return json({ error: "role is required" }, { status: 400 });
   if (!VALID_ROLES.includes(role)) {
@@ -107,10 +111,10 @@ export const onRequestPost: PagesFunction<Env> = async (context) => {
   try {
     await context.env.DB
       .prepare(
-        `INSERT INTO user_team_role (id, userId, teamSlug, teamName, role, createdAt)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO user_team_role (id, userId, teamSlug, teamLeague, teamName, role, createdAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(id, userId, teamSlug, teamName, role, ts)
+      .bind(id, userId, teamSlug, teamLeague, teamName, role, ts)
       .run();
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
