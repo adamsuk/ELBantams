@@ -16,6 +16,8 @@ interface AdminRequest {
   userName: string;
   userEmail: string;
   teamName: string;
+  teamSlug?: string;
+  teamLeague?: string;
   date: string;
   timeStart: string;
   timeEnd: string;
@@ -32,6 +34,8 @@ interface Booking {
   timeStart: string;
   timeEnd: string;
   teamName: string;
+  teamSlug?: string;
+  teamLeague?: string;
   format: string;
   notes?: string;
   pitchName: string;
