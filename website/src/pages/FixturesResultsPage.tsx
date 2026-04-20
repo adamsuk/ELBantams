@@ -64,6 +64,16 @@ function formatDate(iso: string): string {
   return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+// Helper function to match age groups (similar to matchingTeamsByAge but simplified)
+function findTeamsByAgeGroup(liveTeams: LiveTeam[], teamName: string): LiveTeam[] {
+  const m = teamName.match(/Under\s+(\d+)/i);
+  if (!m) return [];
+  const age = parseInt(m[1], 10);
+  const tag = `-u${age}`.toLowerCase();
+  
+  return liveTeams.filter((t) => t.slug.includes(tag));
+}
+
 export function FixturesResultsPage({ feed, teams, liveTeams }: Props) {
   const { activeSection } = useSection();
   const [selectedTeam, setSelectedTeam] = useState<string | null>(null);
@@ -71,24 +81,25 @@ export function FixturesResultsPage({ feed, teams, liveTeams }: Props) {
   // Use composite key (team + league) so same-named Saturday/Sunday teams stay separate
   const fixtureKey = (f: LiveFixture | LiveResult) => `${f.team}\0${f.league}`;
 
-  // Get team names from the section by matching slugs to liveTeams
+  // Get team names from the section by matching slugs OR age groups to liveTeams
   const allowedTeamNames = useMemo(() => {
     if (activeSection === 'all') return null;
     const section = teams.sections.find(s => s.id === activeSection);
     if (!section) return null;
     
-    // Get all team names from liveTeams that match slugs in this section
+    // Get all team names from liveTeams that match teams in this section
     const teamNames = new Set<string>();
     
     for (const team of section.teams) {
       if (team.slug) {
-        // Find live teams with matching slug
+        // 1. Match by exact slug (for senior teams with known slugs)
         const matchingLiveTeams = liveTeams.filter(lt => lt.slug === team.slug);
-        // Add all matching live team names
         matchingLiveTeams.forEach(lt => teamNames.add(lt.name));
+      } else {
+        // 2. Match by age group (for junior teams like "Under 6s")
+        const ageMatchedTeams = findTeamsByAgeGroup(liveTeams, team.name);
+        ageMatchedTeams.forEach(lt => teamNames.add(lt.name));
       }
-      // Note: For teams without slugs (like junior teams), we can't match them yet
-      // The user mentioned dynamic age groups will be handled separately
     }
     
     return teamNames;
@@ -121,7 +132,7 @@ export function FixturesResultsPage({ feed, teams, liveTeams }: Props) {
   // Reset team dropdown when it's no longer in the available list
   const effectiveTeam = selectedTeam && teamOptions.some(o => o.value === selectedTeam) ? selectedTeam : null;
 
-  // Filter by team name from liveTeams that match section slugs
+  // Filter by team name from liveTeams that match section teams
   const isAllowed = (f: LiveFixture | LiveResult) => {
     if (!allowedTeamNames) return true;
     return allowedTeamNames.has(f.team);
