@@ -65,11 +65,14 @@ export function liveTeamsForTeam(team: Team, liveTeams: LiveTeam[]): LiveTeam[] 
 
   // 1. Try exact match first (original behavior)
   if (team.slug) {
-    const exactMatches = liveTeams.filter((t) => t.slug === team.slug);
+    // Capture the slug in a variable to help TypeScript narrow the type
+    const teamSlug = team.slug;
+    
+    const exactMatches = liveTeams.filter((t) => t.slug === teamSlug);
     if (exactMatches.length > 0) return exactMatches;
     
     // 2. Try normalized slug matching with multiple strategies
-    const normalizedMatches = liveTeams.filter((t) => slugsMatch(t.slug, team.slug));
+    const normalizedMatches = liveTeams.filter((t) => slugsMatch(t.slug, teamSlug));
     if (normalizedMatches.length > 0) return normalizedMatches;
     
     // 3. Try matching by team name as fallback
